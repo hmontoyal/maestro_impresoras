@@ -100,12 +100,11 @@ class BuscadorSerieApp:
         if df.empty:
             return
 
-        # 🔴 FILTRAR filas donde Estado = RETIRADA
         if "Estado" in df.columns:
             df = df[df["Estado"].astype(str).str.upper().str.strip() != "RETIRADA"]
 
         if df.empty:
-            return  # No mostrar nada si quedó vacío después del filtro
+            return
 
         tabla["columns"] = list(df.columns)
         tabla["show"] = "headings"
@@ -167,11 +166,14 @@ class BuscadorSerieApp:
             messagebox.showinfo("Exportado", f"Archivo consolidado guardado en:\n{ruta}")
 
     def mostrar_resumen_marca_total(self):
-        if self.df_global.empty or "Marca" not in self.df_global.columns:
+        df = self.df_global.copy()
+        if df.empty or "Marca" not in df.columns:
             messagebox.showwarning("Datos insuficientes", "Debe haber datos y columna 'Marca'.")
             return
+        if "Estado" in df.columns:
+            df = df[df["Estado"].astype(str).str.upper().str.strip() != "RETIRADA"]
 
-        resumen = self.df_global["Marca"].value_counts().reset_index()
+        resumen = df["Marca"].value_counts().reset_index()
         resumen.columns = ["Marca", "Cantidad"]
         resumen["Porcentaje"] = (resumen["Cantidad"] / resumen["Cantidad"].sum() * 100).round(2)
         self.mostrar_resumen_en_ventana(resumen, "Resumen por Marca")
@@ -184,21 +186,27 @@ class BuscadorSerieApp:
         plt.show()
 
     def mostrar_resumen_modelo_total(self):
-        if self.df_global.empty or "Modelo" not in self.df_global.columns:
+        df = self.df_global.copy()
+        if df.empty or "Modelo" not in df.columns:
             messagebox.showwarning("Datos insuficientes", "Debe haber datos y columna 'Modelo'.")
             return
+        if "Estado" in df.columns:
+            df = df[df["Estado"].astype(str).str.upper().str.strip() != "RETIRADA"]
 
-        resumen = self.df_global["Modelo"].value_counts().reset_index()
+        resumen = df["Modelo"].value_counts().reset_index()
         resumen.columns = ["Modelo", "Cantidad"]
         resumen["Porcentaje"] = (resumen["Cantidad"] / resumen["Cantidad"].sum() * 100).round(2)
         self.mostrar_resumen_en_ventana(resumen, "Resumen por Modelo")
 
     def mostrar_resumen_por_cliente(self):
-        if self.df_global.empty or "Cliente" not in self.df_global.columns:
+        df = self.df_global.copy()
+        if df.empty or "Cliente" not in df.columns:
             messagebox.showwarning("Datos insuficientes", "Debe haber datos y columna 'Cliente'.")
             return
+        if "Estado" in df.columns:
+            df = df[df["Estado"].astype(str).str.upper().str.strip() != "RETIRADA"]
 
-        resumen = self.df_global["Cliente"].value_counts().reset_index()
+        resumen = df["Cliente"].value_counts().reset_index()
         resumen.columns = ["Cliente", "Cantidad"]
         resumen["Porcentaje"] = (resumen["Cantidad"] / resumen["Cantidad"].sum() * 100).round(2)
         self.mostrar_resumen_en_ventana(resumen, "Resumen por Cliente")
@@ -217,11 +225,14 @@ class BuscadorSerieApp:
         self.mostrar_datos(df_resumen, tree)
 
     def mostrar_marcas_por_cliente(self):
-        if self.df_global.empty or "Cliente" not in self.df_global.columns or "Marca" not in self.df_global.columns:
+        df = self.df_global.copy()
+        if df.empty or "Cliente" not in df.columns or "Marca" not in df.columns:
             messagebox.showwarning("Datos insuficientes", "Debe haber datos con columnas 'Cliente' y 'Marca'.")
             return
+        if "Estado" in df.columns:
+            df = df[df["Estado"].astype(str).str.upper().str.strip() != "RETIRADA"]
 
-        resumen = self.df_global.groupby(["Cliente", "Marca"]).size().reset_index(name="Cantidad")
+        resumen = df.groupby(["Cliente", "Marca"]).size().reset_index(name="Cantidad")
         self.mostrar_resumen_en_ventana(resumen, "Marcas por Cliente")
 
 # Ejecutar app
