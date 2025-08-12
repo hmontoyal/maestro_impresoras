@@ -3,6 +3,8 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import tkinter.font as tkFont
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')
 
 SINONIMOS = {
     'marca': 'Marca',
@@ -59,6 +61,7 @@ class BuscadorSerieApp:
         botones_frame = tk.Frame(self.root)
         botones_frame.pack(pady=5)
 
+        tk.Button(botones_frame, text="Exportar cliente actual", command=self.exportar_cliente_actual).pack(side="left", padx=5)
         tk.Button(botones_frame, text="Buscar", command=self.buscar_serie).pack(side="left", padx=5)
         tk.Button(botones_frame, text="Exportar resultado", command=self.exportar_resultado).pack(side="left", padx=5)
         tk.Button(botones_frame, text="Exportar consolidado", command=self.exportar_consolidado).pack(side="left", padx=5)
@@ -88,6 +91,31 @@ class BuscadorSerieApp:
         self.combo_clientes['values'] = list(self.datos.keys())
         messagebox.showinfo("Archivo cargado", f"Se cargaron {len(self.df_global)} registros en total.")
 
+    def exportar_cliente_actual(self):
+        if self.df_actual.empty:
+            messagebox.showwarning("Nada que exportar", "Debes seleccionar un cliente con datos válidos.")
+            return
+
+        if "Estado" not in self.df_actual.columns:
+            messagebox.showerror("Error", "La columna 'Estado' no se encuentra en los datos.")
+            return
+
+        df_filtrado = self.df_actual[self.df_actual["Estado"].astype(str).str.upper().str.strip() == "ACTIVA"]
+
+        if df_filtrado.empty:
+            messagebox.showinfo("Sin datos", "No hay registros con estado ACTIVO para exportar.")
+            return
+
+        ruta = filedialog.asksaveasfilename(defaultextension=".xlsx",
+                                        initialfile=f"{self.cliente_var.get()}_activos.xlsx",
+                                        filetypes=[("Excel", "*.xlsx")])
+        if ruta:
+            df_filtrado.to_excel(ruta, index=False)
+            messagebox.showinfo("Exportado", f"Se exportaron {len(df_filtrado)} registros activos del cliente:\n{ruta}")
+
+    
+
+
     def cargar_cliente(self, event=None):
         cliente = self.cliente_var.get()
         if cliente not in self.datos:
@@ -105,6 +133,9 @@ class BuscadorSerieApp:
 
         if df.empty:
             return
+        
+        df = df.reset_index(drop=True)
+        df.insert(0, "N°", df.index + 1)
 
         tabla["columns"] = list(df.columns)
         tabla["show"] = "headings"
@@ -196,6 +227,8 @@ class BuscadorSerieApp:
         resumen = df["Modelo"].value_counts().reset_index()
         resumen.columns = ["Modelo", "Cantidad"]
         resumen["Porcentaje"] = (resumen["Cantidad"] / resumen["Cantidad"].sum() * 100).round(2)
+        # Ordenar alfabéticamente por modelo (ascendente)
+        resumen = resumen.sort_values(by="Modelo", ascending=True)
         self.mostrar_resumen_en_ventana(resumen, "Resumen por Modelo")
 
     def mostrar_resumen_por_cliente(self):
